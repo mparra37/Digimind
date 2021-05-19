@@ -12,6 +12,8 @@ import androidx.lifecycle.ViewModelProviders
 import com.example.digimind.R
 import com.example.digimind.Task
 import com.example.digimind.ui.home.HomeFragment
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -19,6 +21,9 @@ import kotlin.collections.ArrayList
 class DashboardFragment : Fragment() {
 
     private lateinit var dashboardViewModel: DashboardViewModel
+    private lateinit var storage: FirebaseFirestore
+    private lateinit var usuario: FirebaseAuth
+
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -31,6 +36,9 @@ class DashboardFragment : Fragment() {
 
         val btn_time: Button = root.findViewById(R.id.btn_time)
 
+
+        storage = FirebaseFirestore.getInstance()
+        usuario = FirebaseAuth.getInstance()
 
         btn_time.setOnClickListener{
             val cal = Calendar.getInstance()
@@ -58,8 +66,7 @@ class DashboardFragment : Fragment() {
         btn_save.setOnClickListener{
 
             var titulo = et_titulo.text.toString()
-            var time = btn_time.text.toString()
-
+            var tiempo = btn_time.text.toString()
             var days = ArrayList<String>()
 
             if(checkMonday.isChecked)
@@ -77,16 +84,37 @@ class DashboardFragment : Fragment() {
             if(checkSunday.isChecked)
                 days.add("Sunday")
 
-            var task = Task(titulo, days, time)
 
-            HomeFragment.tasks.add(task)
+            val actividad = hashMapOf(
+                "actividad" to et_titulo.text.toString(),
+                "email" to usuario.currentUser.email.toString(),
+                "lu" to checkMonday.isChecked,
+                "ma" to checkTuesday.isChecked,
+                "mi" to checkWednesday.isChecked,
+                "ju" to checkThursday.isChecked,
+                "vi" to checkFriday.isChecked,
+                "sa" to checkSaturday.isChecked,
+                "do" to checkSunday.isChecked,
+                "tiempo" to btn_time.text.toString()
+            )
 
-            Toast.makeText(root.context, "new task added", Toast.LENGTH_SHORT).show()
+            storage.collection("actividades")
+                .add(actividad)
+                .addOnSuccessListener {
+                    Toast.makeText(root.context, "Task agregada", Toast.LENGTH_SHORT).show()
+                    var task = Task(titulo, days, tiempo)
+                    HomeFragment.tasks.add(task)
+                }
+                .addOnFailureListener{
+                    Toast.makeText(root.context, it.toString(), Toast.LENGTH_SHORT).show()
+                }
         }
 
 
         return root
     }
+
+
 
 
 }
